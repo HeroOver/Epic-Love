@@ -75,16 +75,14 @@ enum PMIC_VOLTAGE {
 
 
 /* frequency voltage matching table */
-static const unsigned int frequency_match_1GHZ[][2] = {
+static const unsigned int frequency_match_1GHZ[][4] = {
 /* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
 #if 1
-        {1325, 1100}, /* 1.2GHz */
-        {1300, 1100}, /* 1.0GHz */
-        {1200, 1100}, /* 0.8GHz */
-        {1100, 1100}, /* 0.6GHz */
-        {1050, 1100}, /* 0.4GHz */
-        { 950, 1100}, /* 0.2GHz */
-        { 950, 1000}, /* 0.1GHz */
+        {1000000, 1300, 1100, 0},
+        {800000, 1200, 1100, 1},
+        {400000, 1050, 1100, 2},
+        {200000, 950, 1100, 4},
+        {100000, 950, 1000, 5},
 #else //just for dvs test
         {1000000, 1250, 1100, 0},
         {800000, 1250, 1100, 1},
@@ -94,14 +92,14 @@ static const unsigned int frequency_match_1GHZ[][2] = {
 #endif
 };
 
-static const unsigned int frequency_match_800MHZ[][2] = {
+static const unsigned int frequency_match_800MHZ[][4] = {
 /* frequency, Mathced VDD ARM voltage , Matched VDD INT*/
-        {1200, 1100},
-        {1050, 1100},
-        {950, 1100},
-        {950, 1000},
+        {800000, 1200, 1100, 0},
+        {400000, 1050, 1100, 1},
+        {200000, 950, 1100, 3},
+        {100000, 950, 1000, 4},
 };
-const unsigned int (*frequency_match[2])[2] = {
+const unsigned int (*frequency_match[2])[4] = {
         frequency_match_1GHZ,
         frequency_match_800MHZ,
 };
@@ -135,14 +133,12 @@ static const unsigned int dvs_volt_table_800MHZ[][3] = {
 };
 
 static const unsigned int dvs_volt_table_1GHZ[][3] = {
-        {0, DVSARM1, DVSINT1},//DVSINT0
-	{1, DVSARM1, DVSINT1},
-        {2, DVSARM2, DVSINT1},
-        {3, DVSARM2, DVSINT1},
-        {4, DVSARM3, DVSINT1},
+        {L0, DVSARM1, DVSINT1},//DVSINT0
+        {L1, DVSARM2, DVSINT1},
+        {L2, DVSARM3, DVSINT1},
  //266       {L3, DVSARM3, DVSINT1},
-        {5, DVSARM4, DVSINT1},
-        {6, DVSARM4, DVSINT2},
+        {L3, DVSARM4, DVSINT1},
+        {L4, DVSARM4, DVSINT2},
 //        {L5, DVSARM4, DVSINT2},
 //        {L6, DVSARM4, DVSINT2},
 };
@@ -154,8 +150,8 @@ const unsigned int (*dvs_volt_table[2])[3] = {
 };
 
 static const unsigned int dvs_arm_voltage_set[][2] = {
-	{DVSARM1, 1300},
-	{DVSARM2, 1300},
+	{DVSARM1, 1275},
+	{DVSARM2, 1200},
 	{DVSARM3, 1050},
 	{DVSARM4, 950},
 	{DVSINT1, 1100},
@@ -167,12 +163,12 @@ static int set_max8998(unsigned int pwr, enum perf_level p_lv)
 	int voltage;
 	int pmic_val;
 	int ret = 0;
-	const unsigned int (*frequency_match_tab)[2] = frequency_match[S5PC11X_FREQ_TAB];	
+	const unsigned int (*frequency_match_tab)[4] = frequency_match[S5PC11X_FREQ_TAB];	
 
 	DBG("%s : p_lv = %d : pwr = %d \n", __FUNCTION__, p_lv,pwr);
 
 	if(pwr == PMIC_ARM) {
-		voltage = frequency_match_tab[p_lv][pwr];
+		voltage = frequency_match_tab[p_lv][pwr + 1];
 
 		if(voltage == s_arm_voltage)
 			return ret;
@@ -197,7 +193,7 @@ static int set_max8998(unsigned int pwr, enum perf_level p_lv)
 		s_arm_voltage = voltage;	
 		
 	} else if(pwr == PMIC_INT) {
-		voltage = frequency_match_tab[p_lv][pwr];
+		voltage = frequency_match_tab[p_lv][pwr + 1];
 		if(voltage == s_int_voltage)
                         return ret;
 
